@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}ADDmeCART{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+        <link rel="stylesheet" href="/styles/app.css">
+        {% block stylesheets %}{% endblock %}
+    </head>
+    <body>
+
+        <nav class="master-nav">
+            <a href="/" class="nav-brand">🛒 ADDmeCART</a>
+
+            <div class="nav-menu">
+                <a href="{{ path('app_product_catalog') }}">Shop</a>
+
+                {% if is_granted('ROLE_CUSTOMER') %}
+                    <a href="{{ path('app_user_orders') }}">My Orders</a>
+                    <a href="{{ path('app_wishlist_index') }}" class="nav-wishlist">❤️ Wishlist</a>
+                    <a href="{{ path('app_support_index') }}">🎧 Support</a>
+                    <a href="/cart" class="nav-cart">
+                        🛒 Cart
+                        {% if cartCount is defined and cartCount > 0 %}
+                            <span class="badge badge-green" style="margin-left:4px;">{{ cartCount }}</span>
+                        {% endif %}
+                    </a>
+                {% endif %}
+
+                {% if is_granted('ROLE_SELLER') %}
+                    <a href="{{ path('app_product_new') }}" class="nav-seller">+ Add Product</a>
+                    <a href="{{ path('app_profile') }}" class="nav-seller">Store Profile</a>
+                {% endif %}
+
+                {% if is_granted('ROLE_ADMIN') %}
+                    <a href="{{ path('app_admin_dashboard') }}" class="nav-admin">⚙ Admin</a>
+                    <a href="{{ path('app_admin_support') }}" class="nav-admin">🎟️ Tickets</a>
+                {% endif %}
+            </div>
+
+            <div class="nav-auth" style="display: flex; align-items: center; gap: 16px;">
+                {% if app.user %}
+                    <a href="{{ path('app_notification_index') }}" style="text-decoration: none; position: relative; color: inherit; font-size: 1.2rem;" title="Notifications">
+                        🔔
+                        {% if app.user.unreadNotifications|length > 0 %}
+                            <span class="badge badge-red" style="position: absolute; top: -8px; right: -8px; font-size: 0.6rem; padding: 2px 4px;">{{ app.user.unreadNotifications|length }}</span>
+                        {% endif %}
+                    </a>
+                    <span class="nav-greeting">Hi, {{ app.user.firstName }}!</span>
+                    <a href="{{ path('app_profile') }}" class="btn btn-ghost btn-sm">Profile</a>
+                    <a href="{{ path('app_logout') }}" class="btn btn-ghost btn-sm">Log Out</a>
+                {% else %}
+                    <a href="{{ path('app_login') }}" class="btn btn-ghost btn-sm">Log In</a>
+                    <a href="/register" class="btn btn-primary btn-sm">Register</a>
+                {% endif %}
+            </div>
+        </nav>
+
+        <div class="global-alerts">
+            {% for message in app.flashes('success') %}
+                <div class="alert alert-success">✓ {{ message }}</div>
+            {% endfor %}
+            {% for message in app.flashes('error') %}
+                <div class="alert alert-error">⚠ {{ message }}</div>
+            {% endfor %}
+        </div>
+
+        {% block body %}{% endblock %}
+
+        {% block javascripts %}{% endblock %}
+    </body>
+</html>

@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Order #{{ order.id }} — ADDmeCART{% endblock %}
+
+{% block body %}
+<div class="page-wrapper-medium">
+
+    <a href="{{ path('app_user_orders') }}" class="back-link">← Back to My Orders</a>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:28px;">
+        <h1 class="page-title" style="margin-bottom:0;">Order #{{ order.id }}</h1>
+        <span class="badge badge-blue" style="font-size:0.85rem; padding:6px 14px;">{{ order.orderStatus }}</span>
+    </div>
+
+    {# Items Ordered #}
+    <div class="card" style="margin-bottom:24px;">
+        <div class="card-header">Items Ordered</div>
+        <div class="card-body" style="padding:0;">
+            <table class="data-table">
+                <tbody>
+                    {% for item in order.orderItems %}
+                        <tr>
+                            <td style="font-weight:600; color: var(--text-primary);">{{ item.product.name }}</td>
+                            <td style="text-align:center; color: var(--text-muted);">×{{ item.quantity }}</td>
+                            <td style="text-align:right; font-weight:700;">₱{{ (item.price * item.quantity)|number_format(2) }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3" style="text-align:center; color: var(--danger); font-style:italic;">
+                                Old order format — item details not available.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# Tracking Timeline #}
+    <div class="card">
+        <div class="card-header">Tracking Timeline</div>
+        <div class="card-body">
+            <ul class="timeline">
+                <li class="timeline-item">
+                    <div class="timeline-label">Order Verified</div>
+                    <div class="timeline-desc">Payment was successful. Preparing for shipment.</div>
+                </li>
+                <li class="timeline-item inactive">
+                    <div class="timeline-label">Handed to Courier</div>
+                    <div class="timeline-desc">Waiting for seller to dispatch.</div>
+                </li>
+                <li class="timeline-item inactive">
+                    <div class="timeline-label">Delivered</div>
+                    <div class="timeline-desc">Package arrives at your address.</div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Register — ADDmeCART{% endblock %}
+
+{% block body %}
+<div class="auth-wrapper">
+    <div class="auth-card auth-card-md">
+
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-subtitle">Join ADDmeCART as a customer or seller</p>
+
+        {{ form_errors(registrationForm) }}
+
+        {{ form_start(registrationForm) }}
+
+            <div class="form-row" style="margin-bottom:0;">
+                <div class="form-group">
+                    {{ form_label(registrationForm.firstName) }}
+                    {{ form_widget(registrationForm.firstName, {'attr': {'placeholder': 'Juan'}}) }}
+                </div>
+                <div class="form-group">
+                    {{ form_label(registrationForm.lastName) }}
+                    {{ form_widget(registrationForm.lastName, {'attr': {'placeholder': 'dela Cruz'}}) }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                {{ form_label(registrationForm.email) }}
+                {{ form_widget(registrationForm.email, {'attr': {'placeholder': 'you@example.com'}}) }}
+            </div>
+
+            <div class="role-selector-box form-group">
+                {{ form_label(registrationForm.accountType, 'Account Type', {'label_attr': {'style': 'color: var(--primary); font-weight:700;'}}) }}
+                {{ form_widget(registrationForm.accountType) }}
+                <p class="form-hint">Choose <strong>Customer</strong> to shop or <strong>Seller</strong> to list products.</p>
+            </div>
+
+            <div class="form-group">
+                {{ form_label(registrationForm.securityPin, '4-Digit Security PIN') }}
+                {{ form_widget(registrationForm.securityPin, {'attr': {'placeholder': '••••', 'maxlength': '4'}}) }}
+                <p class="form-hint">Used to confirm payments at checkout.</p>
+            </div>
+
+            <div class="form-group">
+                {{ form_label(registrationForm.plainPassword, 'Password') }}
+                {{ form_widget(registrationForm.plainPassword, {'attr': {'placeholder': '••••••••'}}) }}
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:24px;">
+                {{ form_widget(registrationForm.agreeTerms) }}
+                {{ form_label(registrationForm.agreeTerms, null, {'label_attr': {'style': 'margin:0; font-weight:500; color: var(--text-secondary); cursor:pointer;'}}) }}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg">Create Account</button>
+
+        {{ form_end(registrationForm) }}
+
+        <p style="text-align:center; margin-top:20px; font-size:0.875rem; color: var(--text-muted);">
+            Already have an account? <a href="{{ path('app_login') }}" style="font-weight:700;">Sign in</a>
+        </p>
+
+    </div>
+</div>
+{% endblock %}

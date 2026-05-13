@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Orders — ADDmeCART{% endblock %}
+
+{% block body %}
+<div class="page-wrapper-medium">
+
+    <h1 class="page-title">Order History</h1>
+    <p class="page-subtitle">Track and view your past orders</p>
+
+    {% if orders is empty %}
+        <div class="empty-state">
+            <div class="empty-state__icon">📦</div>
+            <div class="empty-state__title">No orders yet</div>
+            <div class="empty-state__text" style="margin-bottom:20px;">You haven't placed any orders yet.</div>
+            <a href="{{ path('app_product_catalog') }}" class="btn btn-primary">Start Shopping</a>
+        </div>
+    {% else %}
+        {% for order in orders %}
+            {# Determine if order has unreviewed products #}
+            {% set hasUnreviewedItems = false %}
+            {% set firstUnreviewedProduct = null %}
+            {% if order.orderStatus == 'Completed' %}
+                {% for item in order.orderItems %}
+                    {% if item.product.id not in reviewedProductIds %}
+                        {% set hasUnreviewedItems = true %}
+                        {% set firstUnreviewedProduct = item.product %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            <div class="order-card">
+                <div class="order-card__header">
+                    <div>
+                        <div class="order-ref">Order #{{ order.referenceNumber|default(order.id) }}</div>
+                        <div class="order-date">Placed on {{ order.createdAt|date('M d, Y h:i A') }}</div>
+                    </div>
+                    <div class="order-amount">₱{{ order.totalAmount|number_format(2) }}</div>
+                </div>
+
+                <div class="order-card__footer">
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span class="badge badge-blue">{{ order.orderStatus }}</span>
+                        {% if order.paymentMode == 'Cash on Delivery' %}
+                            <span class="badge" style="background: #fef3c7; color: #d97706;">🚚 COD</span>
+                        {% else %}
+                            <span class="badge" style="background: #dbeafe; color: #1d4ed8;">📱 GCash</span>
+                        {% endif %}
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <a href="{{ path('app_order_tracking', {'id': order.id}) }}" class="btn btn-primary btn-sm">
+                            View Details
+                        </a>
+                        {% if hasUnreviewedItems and firstUnreviewedProduct %}
+                            <a href="{{ path('app_product_show', {'id': firstUnreviewedProduct.id}) }}?order_id={{ order.id }}" class="btn btn-success btn-sm">
+                                Leave Review
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+</div>
+{% endblock %}

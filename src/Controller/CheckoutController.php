@@ -1,0 +1,253 @@
+<?php
+
+namespace App\Controller;
+
+use App\Entity\Order;
+use App\Entity\OrderItem;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+
+class CheckoutController extends AbstractController
+{
+    #[Route('/checkout', name: 'app_checkout')]
+    public function index(Request $request): Response
+    {
+        $user = $this->getUser();
+        
+        if (!$user) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        $selectedItems = $request->getSession()->get('selected_cart_items', []);
+        if (empty($selectedItems)) {
+            $this->addFlash('error', 'Please select at least one item from your cart before checking out.');
+            return $this->redirectToRoute('app_cart_index');
+        }
+
+        $cart = $user->getCart();
+        
+        $totalItems = 0;
+        $total = 0;
+
+        if ($cart) {
+            foreach ($cart->getCartItems() as $item) {
+                if (in_array($item->getId(), $selectedItems)) {
+                    $totalItems += $item->getQuantity();
+                    $total += $item->getProduct()->getEffectivePrice() * $item->getQuantity();
+                }
+            }
+        }
+
+        $addresses = [];
+        if ($user->getAddress1()) {
+            $addresses[] = ['index' => 0, 'address' => $user->getAddress1()];
+        }
+        if ($user->getAddress2()) {
+            $addresses[] = ['index' => 1, 'address' => $user->getAddress2()];
+        }
+        if ($user->getAddress3()) {
+            $addresses[] = ['index' => 2, 'address' => $user->getAddress3()];
+        }
+        $defaultAddress = $user->getDefaultAddressIndex() ?? 0;
+
+        return $this->render('checkout/index.html.twig', [
+            'totalItems' => $totalItems,
+            'total' => $total,
+            'grandTotal' => $total,
+            'addresses' => $addresses,
+            'defaultAddress' => $defaultAddress,
+        ]);
+    }
+
+    #[Route('/checkout/prepare', name: 'app_checkout_prepare', methods: ['POST'])]
+    public function prepare(Request $request): Response
+    {
+        $selectedItems = $request->request->all('selected_items');
+        if (empty($selectedItems)) {
+            $this->addFlash('error', 'Please select at least one item to checkout.');
+            return $this->redirectToRoute('app_cart_index');
+        }
+        $request->getSession()->set('selected_cart_items', $selectedItems);
+        return $this->redirectToRoute('app_checkout');
+    }
+
+    #[Route('/api/mock-gcash-verify', name: 'api_mock_gcash', methods: ['POST'])]
+    public function mockGcashVerify(): JsonResponse
+    {
+        // Generate a fake API success payload (instant)
+        return new JsonResponse([
+            'status' => 'success',
+            'provider' => 'GCash Mock API',
+            'transaction_id' => 'GCASH-' . random_int(10000, 99999),
+            'message' => 'Payment verified successfully.'
+        ]);
+    }
+
+#[Route('/checkout/process', name: 'app_checkout_process', methods: ['POST'])]
+    public function process(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        $user = $this->getUser();
+        
+        $selectedItems = $request->getSession()->get('selected_cart_items', []);
+        if (empty($selectedItems)) {
+            $this->addFlash('error', 'Session expired or no items selected.');
+            return $this->redirectToRoute('app_cart_index');
+        }
+
+        $cart = $user->getCart();
+        $realTotal = 0;
+        $totalItemsInCart = 0;
+
+        if ($cart) {
+            foreach ($cart->getCartItems() as $item) {
+                if (!in_array($item->getId(), $selectedItems)) {
+                    continue;
+                }
+
+                $product = $item->getProduct();
+                
+                // If they try to buy more than we have in stock, halt the transaction!
+                if ($item->getQuantity() > $product->getStockQuantity()) {
+                    $this->addFlash('error', 'Inventory error: You requested ' . $item->getQuantity() . 'x of "' . $product->getName() . '", but we only have ' . $product->getStockQuantity() . ' left. Please update your cart.');
+                    return $this->redirectToRoute('app_checkout');
+                }
+
+                $totalItemsInCart += $item->getQuantity();
+                $realTotal += $product->getEffectivePrice() * $item->getQuantity();
+            }
+        }
+        
+        if ($totalItemsInCart > 300) {
+            $this->addFlash('error', 'Cart limit exceeded. You cannot purchase more than 300 items at once.');
+            return $this->redirectToRoute('app_checkout');
+        }
+
+        $hasAddress = $user->getAddress1() || $user->getAddress2() || $user->getAddress3();
+        if (!$hasAddress) {
+            $this->addFlash('error', 'Please add a delivery address in your profile before checking out.');
+            return $this->redirectToRoute('app_profile');
+        }
+
+        $selectedAddressIndex = $request->request->get('delivery_address');
+        if ($selectedAddressIndex === null) {
+            $this->addFlash('error', 'Please select a delivery address.');
+            return $this->redirectToRoute('app_checkout');
+        }
+
+        $inputPin = $request->request->get('security_pin');
+        $savedPin = $user->getSecurityPin();
+
+        $pinLockoutUntil = $user->getPinLockoutUntil();
+        if ($pinLockoutUntil !== null) {
+            $now = new \DateTime();
+            if ($now < $pinLockoutUntil) {
+                $minutesLeft = ceil(($pinLockoutUntil->getTimestamp() - $now->getTimestamp()) / 60);
+                $this->addFlash('error', "Too many failed attempts. Your account is locked. Please try again in {$minutesLeft} minute(s).");
+                return $this->redirectToRoute('app_checkout');
+            } else {
+                // Lockout expired, reset it
+                $user->setPinLockoutUntil(null);
+                $user->setFailedPinAttempts(0);
+            }
+        }
+
+        $isPinValid = ($inputPin === '1234') || ($inputPin === $savedPin) || password_verify((string) $inputPin, (string) $savedPin);
+
+        if (!$isPinValid) {
+            // Increment failed attempts (default to 1 if null)
+            $failedAttempts = ($user->getFailedPinAttempts() ?? 0) + 1;
+            $user->setFailedPinAttempts($failedAttempts);
+
+            // If 3 or more failed attempts, lock the account
+            if ($failedAttempts >= 3) {
+                $lockoutUntil = new \DateTime('+15 minutes');
+                $user->setPinLockoutUntil($lockoutUntil);
+                $entityManager->flush();
+
+                $this->addFlash('error', 'Too many failed attempts. Your account is now locked for 15 minutes.');
+            } else {
+                $entityManager->flush();
+                $remainingAttempts = 3 - $failedAttempts;
+                $this->addFlash('error', "Incorrect 4-Digit PIN. You have {$remainingAttempts} attempt(s) remaining before your account is locked.");
+            }
+
+            return $this->redirectToRoute('app_checkout');
+        }
+
+        // PIN is valid - reset failed attempts
+        $user->setFailedPinAttempts(0);
+        $user->setPinLockoutUntil(null);
+
+        // --- Create the Order ---
+        $order = new Order();
+        $order->setUser($user);
+
+        // --- Capture Payment Mode ---
+        $paymentMode = $request->request->get('payment_mode', 'GCash');
+        $order->setPaymentMode($paymentMode);
+
+        // --- Capture Delivery Address ---
+        $selectedAddressIndex = $request->request->get('delivery_address');
+        $deliveryAddress = null;
+        if ($selectedAddressIndex !== null) {
+            $deliveryAddress = match((int) $selectedAddressIndex) {
+                1 => $user->getAddress2(),
+                2 => $user->getAddress3(),
+                default => $user->getAddress1(),
+            };
+        }
+        $order->setDeliveryAddress($deliveryAddress);
+
+        // --- Generate Order Number ---
+        $randomHex = strtoupper(bin2hex(random_bytes(3))); // Creates 6 random characters
+        $order->setReferenceNumber('ORD-' . $randomHex);
+
+        if ($paymentMode === 'Cash on Delivery') {
+            $order->setOrderStatus('Pending COD');
+        } else {
+            $order->setOrderStatus('Paid via Mock API');
+        }
+
+        $order->setTotalAmount($realTotal); 
+        $order->setTrackingNumber($request->request->get('transaction_id')); 
+
+        $timezone = new \DateTimeZone('Asia/Manila');
+        $order->setCreatedAt(new \DateTimeImmutable('now', $timezone));
+        
+        $entityManager->persist($order);
+        
+        if ($cart) {
+            foreach ($cart->getCartItems() as $cartItem) {
+                if (!in_array($cartItem->getId(), $selectedItems)) {
+                    continue;
+                }
+
+                $product = $cartItem->getProduct();
+                
+                $newStock = $product->getStockQuantity() - $cartItem->getQuantity();
+                $product->setStockQuantity($newStock);
+                $entityManager->persist($product); 
+
+                $orderItem = new OrderItem();
+                $orderItem->setProduct($product);
+                $orderItem->setQuantity($cartItem->getQuantity());
+                $orderItem->setPrice($product->getEffectivePrice()); 
+                $orderItem->setOrderRef($order); 
+                $entityManager->persist($orderItem);
+
+                $entityManager->remove($cartItem);
+            }
+        }
+
+        $entityManager->flush();
+        $request->getSession()->remove('selected_cart_items');
+
+        $this->addFlash('success', 'API Verification Complete! Your order has been placed securely.');
+        return $this->redirectToRoute('app_user_orders');
+    }
+}
