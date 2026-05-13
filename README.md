@@ -58,7 +58,6 @@ ADDmeCART/
 ├── templates/           # Twig view templates
 ├── public/             # Static assets (CSS, images)
 ├── migrations/         # Database migration files
-├── documents/          # SWDD.md documentation
 └── var/                # Cache and database (SQLite)
 ```
 
