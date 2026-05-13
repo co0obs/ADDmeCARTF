@@ -15,7 +15,7 @@ A lightweight e-commerce catalog and inventory management system built with **Sy
 
 ```bash
 # Clone the repository
-git clone https://github.com/ajee0222/ADDmeCART.git
+git clone https://github.com/co0obs/ADDmeCARTF.git
 cd ADDmeCART
 
 # Install dependencies
