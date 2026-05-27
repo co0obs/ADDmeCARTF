@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Product;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 class ProductRepository extends ServiceEntityRepository
@@ -13,7 +14,7 @@ class ProductRepository extends ServiceEntityRepository
         parent::__construct($registry, Product::class);
     }
 
-    public function searchAndFilter(?string $keyword, ?string $category, ?int $minStars, ?string $sort, ?float $minPrice = null, ?float $maxPrice = null): array
+    public function searchAndFilter(?string $keyword, ?string $category, ?int $minStars, ?string $sort, ?float $minPrice = null, ?float $maxPrice = null, int $page = 1, int $limit = 12): Paginator
     {
         $qb = $this->createQueryBuilder('p');
 
@@ -51,6 +52,10 @@ class ProductRepository extends ServiceEntityRepository
             $qb->orderBy('p.id', 'DESC');
         }
 
-        return $qb->getQuery()->getResult();
+        $qb->setFirstResult(($page - 1) * $limit)
+           ->setMaxResults($limit);
+
+        return new Paginator($qb->getQuery(), fetchJoinCollection: false);
     }
 }
+

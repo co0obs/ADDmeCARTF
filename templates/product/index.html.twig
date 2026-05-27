@@ -17,7 +17,7 @@
 
     {# --- SEARCH & FILTERS --- #}
     <div class="search-bar" style="background: var(--surface); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
-        <form method="get" action="{{ path('app_product_catalog') }}" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; align-items:end; width:100%;">
+        <form method="get" action="{{ path('app_product_catalog') }}" class="filter-form" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; align-items:end; width:100%;">
             
             <div class="form-group" style="margin:0;">
                 <label class="form-label">Search Keyword</label>
@@ -137,6 +137,31 @@
             </div>
         {% endfor %}
     </div>
+
+    {# --- PAGINATION --- #}
+    {% if totalPages is defined and totalPages > 1 %}
+        <nav class="pagination" aria-label="Product pagination">
+            {% if currentPage > 1 %}
+                <a href="{{ path('app_product_catalog', app.request.query.all|merge({'page': currentPage - 1})) }}" class="btn btn-ghost btn-sm">&laquo; Prev</a>
+            {% endif %}
+
+            {% for i in 1..totalPages %}
+                {% if i == currentPage %}
+                    <span class="btn btn-primary btn-sm">{{ i }}</span>
+                {% elseif i <= 3 or i > totalPages - 2 or (i >= currentPage - 1 and i <= currentPage + 1) %}
+                    <a href="{{ path('app_product_catalog', app.request.query.all|merge({'page': i})) }}" class="btn btn-ghost btn-sm">{{ i }}</a>
+                {% elseif i == 4 and currentPage > 5 %}
+                    <span class="pagination-dots">…</span>
+                {% elseif i == totalPages - 2 and currentPage < totalPages - 4 %}
+                    <span class="pagination-dots">…</span>
+                {% endif %}
+            {% endfor %}
+
+            {% if currentPage < totalPages %}
+                <a href="{{ path('app_product_catalog', app.request.query.all|merge({'page': currentPage + 1})) }}" class="btn btn-ghost btn-sm">Next &raquo;</a>
+            {% endif %}
+        </nav>
+    {% endif %}
 
 </div>
 {% endblock %}

@@ -13,7 +13,7 @@
         {# Table Header #}
         <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm);">
 
-            <div style="display: grid; grid-template-columns: 40px 2fr 1fr 1fr 1fr 100px; gap: 16px; padding: 14px 24px; background: var(--bg); border-bottom: 1px solid var(--border); align-items: center;">
+            <div class="cart-grid-header" style="display: grid; grid-template-columns: 40px 2fr 1fr 1fr 1fr 100px; gap: 16px; padding: 14px 24px; background: var(--bg); border-bottom: 1px solid var(--border); align-items: center;">
                 <div style="display: flex; justify-content: center;">
                     <input type="checkbox" id="selectAllCheckbox" style="cursor: pointer; width: 18px; height: 18px;">
                 </div>
@@ -32,7 +32,7 @@
                 </div>
 
                 {% for item in items %}
-                    <div style="display: grid; grid-template-columns: 40px 2fr 1fr 1fr 1fr 100px; gap: 16px; padding: 20px 24px; align-items: center; border-bottom: 1px solid var(--border);">
+                    <div class="cart-grid-row" style="display: grid; grid-template-columns: 40px 2fr 1fr 1fr 1fr 100px; gap: 16px; padding: 20px 24px; align-items: center; border-bottom: 1px solid var(--border);">
                         <div style="display: flex; justify-content: center;">
                             <input type="checkbox" name="selected_items[]" value="{{ item.id }}" class="item-checkbox" data-store="{{ storeName|e('html_attr') }}" data-price="{{ item.product.effectivePrice * item.quantity }}" style="cursor: pointer; width: 18px; height: 18px;">
                         </div>
@@ -99,7 +99,7 @@
         </div>
 
         {# Sticky Checkout Bar #}
-        <div style="position: sticky; bottom: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-top: 16px; padding: 18px 24px; display: flex; justify-content: flex-end; align-items: center; gap: 32px; box-shadow: var(--shadow-md);">
+        <div class="cart-checkout-bar" style="position: sticky; bottom: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-top: 16px; padding: 18px 24px; display: flex; justify-content: flex-end; align-items: center; gap: 32px; box-shadow: var(--shadow-md);">
             <div style="text-align: right;">
                 <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Grand Total</div>
                 <div style="font-size: 1.6rem; font-weight: 800; color: var(--primary);" id="grandTotalDisplay">₱{{ total|number_format(2) }}</div>

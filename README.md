@@ -30,6 +30,9 @@ php bin/console cache:clear
 
 # Start the development server
 php -S 0.0.0.0:8000 -t public
+
+# Start ngrok server
+ngrok http 8000
 ```
 
 Open your browser and navigate to: **http://localhost:8000**

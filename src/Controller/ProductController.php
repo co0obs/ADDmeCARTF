@@ -28,20 +28,26 @@ class ProductController extends AbstractController
         $sort     = $request->query->get('sort');
         $minPriceStr = $request->query->get('minPrice');
         $maxPriceStr = $request->query->get('maxPrice');
+        $page     = max(1, $request->query->getInt('page', 1));
+        $limit    = 12;
 
         $minPrice = is_numeric($minPriceStr) ? (float) $minPriceStr : null;
         $maxPrice = is_numeric($maxPriceStr) ? (float) $maxPriceStr : null;
 
-        $products = $productRepository->searchAndFilter($keyword, $category, $stars, $sort, $minPrice, $maxPrice);
+        $paginator = $productRepository->searchAndFilter($keyword, $category, $stars, $sort, $minPrice, $maxPrice, $page, $limit);
+        $totalProducts = count($paginator);
+        $totalPages = (int) ceil($totalProducts / $limit);
 
         return $this->render('product/index.html.twig', [
-            'products'        => $products,
+            'products'        => $paginator,
             'currentKeyword'  => $keyword,
             'currentCategory' => $category,
             'currentStars'    => $stars,
             'currentSort'     => $sort,
             'currentMinPrice' => $minPrice,
             'currentMaxPrice' => $maxPrice,
+            'currentPage'     => $page,
+            'totalPages'      => $totalPages,
         ]);
     }
 
