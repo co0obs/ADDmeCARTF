@@ -85,8 +85,8 @@
     </div>
 
     {# --- REVIEWS SECTION --- #}
-    <div style="margin-top: 40px; background: var(--surface); border-radius: var(--radius-lg); padding: 40px; box-shadow: var(--shadow-md); border: 1px solid var(--border);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div class="reviews-section">
+        <div class="reviews-header">
             <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">Customer Reviews</h2>
             {% if avgRating %}
                 <div style="font-size: 1.1rem; color: var(--text-secondary);">
@@ -99,7 +99,7 @@
 
         {# Review Form — only for logged-in users #}
         {% if is_granted('ROLE_USER') %}
-            <div style="background: var(--bg); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px; border: 1px solid var(--border);">
+            <div class="review-form-box">
                 <h3 style="margin: 0 0 16px 0; font-size: 1.1rem; font-weight: 600;">Write a Review</h3>
                 <form method="post" action="{{ path('app_product_review', {'id': product.id}) }}">
                     {% if app.request.query.get('order_id') %}
